@@ -117,16 +117,22 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             goto cleanup;
         }
         if (ctx->value_label_handler) {
-            char label[4*label_len+1];
-            retval = readstat_convert(label, sizeof(label),
+            size_t label_size = 4*label_len+1;
+            char *label = malloc(label_size);
+            retval = readstat_convert(label, label_size,
                     &lbp2[10], label_len, ctx->converter);
-            if (retval != READSTAT_OK)
+            if (retval != READSTAT_OK) {
+                free(label);
                 goto cleanup;
+            }
 
             if (ctx->value_label_handler(name, value, label, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                 retval = READSTAT_ERROR_USER_ABORT;
+                free(label);
                 goto cleanup;
             }
+
+            free(label);
         }
 
         lbp2 += 8 + 2 + label_len + 1;
